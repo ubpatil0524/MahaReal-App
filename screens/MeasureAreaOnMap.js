@@ -48,9 +48,8 @@ function MeasureAreaOnMap({navigation}) {
         setErrorMessage(null);
       },
       error => {
-        console.log(error.code, error.message);
         setErrorMessage(error.message);
-        Alert.alert('Location Error', error.message, [
+        Alert.alert('Please turn on location', error.message, [
           {text: 'Try Again', onPress: () => retryGeolocation()},
         ]);
       },

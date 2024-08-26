@@ -1,18 +1,46 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
-import { TouchableOpacity } from 'react-native-gesture-handler';
+import {View, Text, StyleSheet, ScrollView} from 'react-native';
+import {TouchableOpacity} from 'react-native-gesture-handler';
 import Icon from 'react-native-vector-icons/Foundation';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import AntDesign from 'react-native-vector-icons/AntDesign';
+import Fontisto from 'react-native-vector-icons/Fontisto';
+import Share from 'react-native-share';
 
+const HomeScreen = ({navigation}) => {
+  const shareMsg = async () => {
+    const shareOptions = {
+      message: `Prevent Land Transactions Frauds.
 
-const HomeScreen = ({ navigation }) => {
+Install @MahaReal app.
+
+Features:
+1) Get the location and boundary of 7/12 Survey no. on map.
+2) From location get 7/12 survey no.
+3) Measure area of plot on mobile phone.
+4) Calculate distance between two points.
+5) Area unit converter: Hectare,Acre,Guntha,Sq.Feet,Sq.Meter
+6) Length unit converter: meter,foot,centimeter,inches
+7) Special Compass for marking East-West lines on plot. 
+
+Install link: @MahaReal
+      `,
+    };
+
+    try {
+      const shareMe = Share.open(shareOptions);
+    } catch (error) {
+      console.log('Error => ', error);
+    }
+  };
+
   return (
     <ScrollView contentContainerStyle={styles.scrollContainer}>
-
-      <TouchableOpacity style={styles.container} onPress={() => navigation.navigate('Search')} >
+      <TouchableOpacity
+        style={styles.container}
+        onPress={() => navigation.navigate('Search')}>
         <View style={styles.icon}>
-          <Icon name="map" size={30} color='green' />
+          <Icon name="map" size={30} color="green" />
         </View>
         <View style={styles.textContainer}>
           <Text style={styles.mainText}>Find 7/12</Text>
@@ -20,19 +48,25 @@ const HomeScreen = ({ navigation }) => {
         </View>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.container} onPress={() => navigation.navigate('UnitConverter')} >
+      <TouchableOpacity
+        style={styles.container}
+        onPress={() => navigation.navigate('UnitConverter')}>
         <View style={styles.icon}>
-          <AntDesign name="swap" size={30} color='green' />
+          <AntDesign name="swap" size={30} color="green" />
         </View>
         <View style={styles.textContainer}>
           <Text style={styles.mainText}>Unit Converter</Text>
-          <Text style={styles.subText}>Convert among acre, guntha, sq.meter, hectare</Text>
+          <Text style={styles.subText}>
+            Convert among acre, guntha, sq.meter, hectare
+          </Text>
         </View>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.container} onPress={() => navigation.navigate('MeasureAreaOnMap')} >
+      <TouchableOpacity
+        style={styles.container}
+        onPress={() => navigation.navigate('MeasureAreaOnMap')}>
         <View style={styles.icon}>
-          <MaterialCommunityIcons name="tape-measure" size={30} color='green' />
+          <MaterialCommunityIcons name="tape-measure" size={30} color="green" />
         </View>
         <View style={styles.textContainer}>
           <Text style={styles.mainText}>Measure Area on Map</Text>
@@ -40,6 +74,17 @@ const HomeScreen = ({ navigation }) => {
         </View>
       </TouchableOpacity>
 
+      <TouchableOpacity style={styles.container} onPress={shareMsg}>
+        <View style={styles.icon}>
+          <Fontisto name="share-a" size={30} color="green" />
+        </View>
+        <View style={styles.textContainer}>
+          <Text style={styles.mainText}>Share App</Text>
+          <Text style={styles.subText}>
+            Share MahaReal on WhatsApp to your friends
+          </Text>
+        </View>
+      </TouchableOpacity>
     </ScrollView>
   );
 };

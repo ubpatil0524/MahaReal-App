@@ -36,7 +36,7 @@ Install link: @MahaReal
 
   return (
     <ScrollView contentContainerStyle={styles.scrollContainer}>
-      <TouchableOpacity
+      {/* <TouchableOpacity
         style={styles.container}
         onPress={() => navigation.navigate('Search')}>
         <View style={styles.icon}>
@@ -46,7 +46,7 @@ Install link: @MahaReal
           <Text style={styles.mainText}>Find 7/12</Text>
           <Text style={styles.subText}>Get map by survey no.</Text>
         </View>
-      </TouchableOpacity>
+      </TouchableOpacity> */}
 
       <TouchableOpacity
         style={styles.container}

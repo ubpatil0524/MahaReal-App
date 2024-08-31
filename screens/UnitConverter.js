@@ -360,6 +360,7 @@ function UnitConverter() {
             <View key={index} style={styles.TxtContainer}>
               <TextInput
                 placeholder={placeholder}
+                placeholderTextColor="grey"
                 style={{fontSize: 20}}
                 keyboardType="numeric"
                 value={
@@ -451,7 +452,7 @@ function UnitConverter() {
           </TouchableOpacity>
         </View>
 
-        <View style={{flexDirection: 'column', marginTop: 20}}>
+        <View style={{flexDirection: 'column', marginTop: 10}}>
           {selectedSection === 'Area' && <Area />}
           {selectedSection === 'Length' && <Length />}
         </View>
@@ -464,7 +465,7 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 30,
+    marginTop: 10,
   },
   areaLengthView: {
     width: '40%',

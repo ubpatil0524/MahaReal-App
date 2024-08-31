@@ -30,11 +30,9 @@ function MeasureAreaOnMap({navigation}) {
       error => {
         console.log(error.code, error.message);
         setErrorMessage(error.message);
-        Alert.alert('Location Error', error.message, [
-          {text: 'Try Again', onPress: () => retryGeolocation()},
-        ]);
+        showAlert('Location Error', error.message, retryGeolocation);
       },
-      {enableHighAccuracy: true, timeout: 30000, maximumAge: 10000},
+      {enableHighAccuracy: false, timeout: 60000, maximumAge: 60000}, // Lower accuracy and extended timeout
     );
 
     const watchId = Geolocation.watchPosition(
@@ -49,11 +47,9 @@ function MeasureAreaOnMap({navigation}) {
       },
       error => {
         setErrorMessage(error.message);
-        Alert.alert('Please turn on location', error.message, [
-          {text: 'Try Again', onPress: () => retryGeolocation()},
-        ]);
+        showAlert('Please Turn On Location', error.message, retryGeolocation);
       },
-      {enableHighAccuracy: true, distanceFilter: 10},
+      {enableHighAccuracy: false, distanceFilter: 50}, // Allowing lower accuracy and larger distance filter
     );
 
     return () => {
@@ -70,8 +66,8 @@ function MeasureAreaOnMap({navigation}) {
         setMapRegion({
           latitude: latitude,
           longitude: longitude,
-          latitudeDelta: 0.015,
-          longitudeDelta: 0.0121,
+          latitudeDelta: 0.0,
+          longitudeDelta: 0.0,
         });
         setErrorMessage(null);
       },
@@ -79,7 +75,7 @@ function MeasureAreaOnMap({navigation}) {
         console.log(error.code, error.message);
         setErrorMessage(error.message);
       },
-      {enableHighAccuracy: true, timeout: 30000, maximumAge: 10000},
+      {enableHighAccuracy: false, timeout: 60000, maximumAge: 60000}, // Lower accuracy and extended timeout
     );
   };
 
@@ -90,7 +86,6 @@ function MeasureAreaOnMap({navigation}) {
       newCoords[0].latitude === e.nativeEvent.coordinate.latitude &&
       newCoords[0].longitude === e.nativeEvent.coordinate.longitude
     ) {
-      // Close the polygon
       newCoords.push(newCoords[0]);
       setPolygonCoords(newCoords);
       calculateAndUpdateMeasurements(newCoords);
@@ -101,9 +96,7 @@ function MeasureAreaOnMap({navigation}) {
   };
 
   const calculateAndUpdateMeasurements = coords => {
-    if (coords.length < 4) return; // Ensure minimum number of points
-
-    // Ensure the polygon is closed
+    if (coords.length < 4) return;
     const closedCoords =
       coords.length > 3 &&
       coords[0].latitude === coords[coords.length - 1].latitude &&
@@ -121,7 +114,7 @@ function MeasureAreaOnMap({navigation}) {
     const polygonGeoJson = polygon([
       coords.map(coord => [coord.longitude, coord.latitude]),
     ]);
-    return area(polygonGeoJson); // Area in square meters
+    return area(polygonGeoJson);
   };
 
   const calculatePerimeter = coords => {
@@ -129,15 +122,27 @@ function MeasureAreaOnMap({navigation}) {
     const polygonGeoJson = polygon([
       coords.map(coord => [coord.longitude, coord.latitude]),
     ]);
-    return length(polygonGeoJson) * 1000; // Perimeter in millimeters
+    return length(polygonGeoJson) * 1000;
+  };
+
+  const showAlert = (title, message, retryAction) => {
+    Alert.alert(
+      title,
+      message,
+      [
+        {text: 'Cancel', style: 'cancel'},
+        {text: 'Retry', onPress: retryAction},
+      ],
+      {cancelable: false},
+    );
   };
 
   return (
-    <View style={{flex: 1}}>
+    <View style={styles.container}>
       {mapRegion ? (
         <MapView
           provider={PROVIDER_GOOGLE}
-          style={{height: '100%', width: '100%'}}
+          style={styles.map}
           region={mapRegion}
           showsUserLocation={true}
           followsUserLocation={true}
@@ -146,31 +151,25 @@ function MeasureAreaOnMap({navigation}) {
           {polygonCoords.length > 1 && (
             <Polygon
               coordinates={polygonCoords}
-              strokeColor="blue"
+              strokeColor="rgba(0, 0, 255, 0.8)"
               strokeWidth={2}
-              fillColor="rgba(0, 0, 255, 0.1)"
+              fillColor="rgba(0, 0, 255, 0.2)"
             />
           )}
           {polygonCoords.map((coordinate, index) => (
             <Circle
               key={index}
               center={coordinate}
-              radius={2} // Radius of the circle in meters
-              strokeColor="red"
+              radius={2}
+              strokeColor="rgba(255, 0, 0, 0.8)"
               fillColor="rgba(255, 0, 0, 0.5)"
             />
           ))}
         </MapView>
       ) : (
-        <Text
-          style={{
-            color: 'black',
-            fontWeight: 'bold',
-            alignSelf: 'center',
-            textAlign: 'center',
-          }}>
-          Loading...
-        </Text>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Loading...</Text>
+        </View>
       )}
 
       {errorMessage && (
@@ -178,10 +177,6 @@ function MeasureAreaOnMap({navigation}) {
           <Text style={styles.errorText}>Error: {errorMessage}</Text>
         </View>
       )}
-
-      {/* <TouchableOpacity style={styles.retryButton} onPress={retryGeolocation}>
-        <Text style={styles.retryButtonText}>LIVE</Text>
-      </TouchableOpacity> */}
 
       <View style={styles.measurementsContainer}>
         <Text style={styles.measurementsText}>
@@ -196,46 +191,54 @@ function MeasureAreaOnMap({navigation}) {
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  map: {
+    height: '100%',
+    width: '100%',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    color: 'black',
+    fontWeight: 'bold',
+    fontSize: 18,
+  },
   errorContainer: {
     position: 'absolute',
     top: 10,
     left: 10,
     right: 10,
-    backgroundColor: 'red',
+    backgroundColor: 'rgba(255, 0, 0, 0.8)',
     padding: 10,
     borderRadius: 5,
   },
   errorText: {
     color: 'white',
-  },
-  retryButton: {
-    position: 'absolute',
-    bottom: 20,
-    left: '5%',
-    right: '5%',
-    backgroundColor: 'red',
-    padding: 10,
-    alignItems: 'center',
-    borderRadius: 5,
-  },
-  retryButtonText: {
-    color: 'white',
+    fontWeight: 'bold',
+    textAlign: 'center',
   },
   measurementsContainer: {
     position: 'absolute',
     bottom: 20,
     width: '95%',
     alignSelf: 'center',
-    backgroundColor: 'white',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
     padding: 10,
-    borderRadius: 5,
-    borderWidth: 2,
-    borderColor: 'gray',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.1)',
+    elevation: 2,
   },
   measurementsText: {
     fontSize: 16,
     color: 'black',
     fontWeight: 'bold',
+    textAlign: 'center',
   },
 });
 

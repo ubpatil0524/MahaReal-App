@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   View,
   ScrollView,
+  KeyboardAvoidingView,
 } from 'react-native';
 
 function UnitConverter() {
@@ -361,7 +362,7 @@ function UnitConverter() {
               <TextInput
                 placeholder={placeholder}
                 placeholderTextColor="grey"
-                style={{fontSize: 20}}
+                style={{fontSize: 20, color: 'black'}}
                 keyboardType="numeric"
                 value={
                   isNested
@@ -387,9 +388,14 @@ function UnitConverter() {
   const Area = () => {
     return (
       <>
-        {renderRow('He.', ['He.'], 'He')}
-        {renderRow('R', ['R'], 'R')}
-        {renderRow('sq.mtr', ['sq.mtr'], 'sqMTR')}
+        <View style={{borderWidth: 2, margin: 10, borderRadius: 10}}>
+          <Text style={{color: 'black', fontSize: 22, textAlign: 'center'}}>
+            7/12
+          </Text>
+          {renderRow('He.', ['He.'], 'He')}
+          {renderRow('R', ['R'], 'R')}
+          {renderRow('sq.mtr', ['sq.mtr'], 'sqMTR')}
+        </View>
         {renderRow('Hectare', ['Enter Value'], 'hectare')}
         {renderRow('Acre', ['Enter Value'], 'acre')}
         {renderRow('Bigha', ['Enter Value'], 'bigha')}
@@ -414,49 +420,55 @@ function UnitConverter() {
 
   return (
     <>
-      <ScrollView>
-        <View style={styles.container}>
-          <TouchableOpacity
-            style={[
-              styles.areaLengthView,
-              selectedSection === 'Area' ? styles.selected : styles.unselected,
-            ]}
-            onPress={() => setSelectedSection('Area')}>
-            <Text
+      <KeyboardAvoidingView
+        style={{flex: 1}}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        <ScrollView>
+          <View style={styles.container}>
+            <TouchableOpacity
               style={[
-                styles.TxtareaLength,
+                styles.areaLengthView,
                 selectedSection === 'Area'
-                  ? styles.selectedText
-                  : styles.unselectedText,
-              ]}>
-              Area
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.areaLengthView,
-              selectedSection === 'Length'
-                ? styles.selected
-                : styles.unselected,
-            ]}
-            onPress={() => setSelectedSection('Length')}>
-            <Text
+                  ? styles.selected
+                  : styles.unselected,
+              ]}
+              onPress={() => setSelectedSection('Area')}>
+              <Text
+                style={[
+                  styles.TxtareaLength,
+                  selectedSection === 'Area'
+                    ? styles.selectedText
+                    : styles.unselectedText,
+                ]}>
+                Area
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
               style={[
-                styles.TxtareaLength,
+                styles.areaLengthView,
                 selectedSection === 'Length'
-                  ? styles.selectedText
-                  : styles.unselectedText,
-              ]}>
-              Length
-            </Text>
-          </TouchableOpacity>
-        </View>
+                  ? styles.selected
+                  : styles.unselected,
+              ]}
+              onPress={() => setSelectedSection('Length')}>
+              <Text
+                style={[
+                  styles.TxtareaLength,
+                  selectedSection === 'Length'
+                    ? styles.selectedText
+                    : styles.unselectedText,
+                ]}>
+                Length
+              </Text>
+            </TouchableOpacity>
+          </View>
 
-        <View style={{flexDirection: 'column', marginTop: 10}}>
-          {selectedSection === 'Area' && <Area />}
-          {selectedSection === 'Length' && <Length />}
-        </View>
-      </ScrollView>
+          <View style={{flexDirection: 'column', marginTop: 10}}>
+            {selectedSection === 'Area' && <Area />}
+            {selectedSection === 'Length' && <Length />}
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </>
   );
 }

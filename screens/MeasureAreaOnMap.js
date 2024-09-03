@@ -1,5 +1,6 @@
 import React, {useState, useEffect} from 'react';
 import {StyleSheet, Text, TouchableOpacity, View, Alert} from 'react-native';
+import {Picker} from '@react-native-picker/picker';
 import MapView, {
   Marker,
   PROVIDER_GOOGLE,
@@ -14,6 +15,17 @@ function MeasureAreaOnMap({navigation}) {
   const [errorMessage, setErrorMessage] = useState(null);
   const [polygonCoords, setPolygonCoords] = useState([]);
   const [measurements, setMeasurements] = useState({area: 0, perimeter: 0});
+  const [mapType, setMapType] = useState('standard');
+  const [selectedUnit, setSelectedUnit] = useState('Square m');
+
+  const conversionFactors = {
+    'Square m': 1,
+    'Square mm': 1e6,
+    'Square cm': 1e4,
+    'Square km': 1e-6,
+    'Square miles': 3.861e-7,
+    'Square yards': 1.196,
+  };
 
   useEffect(() => {
     Geolocation.getCurrentPosition(
@@ -32,7 +44,7 @@ function MeasureAreaOnMap({navigation}) {
         setErrorMessage(error.message);
         showAlert('Location Error', error.message, retryGeolocation);
       },
-      {enableHighAccuracy: false, timeout: 60000, maximumAge: 60000}, // Lower accuracy and extended timeout
+      {enableHighAccuracy: false, timeout: 60000, maximumAge: 60000},
     );
 
     const watchId = Geolocation.watchPosition(
@@ -49,7 +61,7 @@ function MeasureAreaOnMap({navigation}) {
         setErrorMessage(error.message);
         showAlert('Please Turn On Location', error.message, retryGeolocation);
       },
-      {enableHighAccuracy: false, distanceFilter: 50}, // Allowing lower accuracy and larger distance filter
+      {enableHighAccuracy: false, distanceFilter: 50},
     );
 
     return () => {
@@ -75,7 +87,7 @@ function MeasureAreaOnMap({navigation}) {
         console.log(error.code, error.message);
         setErrorMessage(error.message);
       },
-      {enableHighAccuracy: false, timeout: 60000, maximumAge: 60000}, // Lower accuracy and extended timeout
+      {enableHighAccuracy: false, timeout: 60000, maximumAge: 60000},
     );
   };
 
@@ -106,7 +118,10 @@ function MeasureAreaOnMap({navigation}) {
 
     const areaValue = calculateArea(closedCoords);
     const perimeterValue = calculatePerimeter(closedCoords);
-    setMeasurements({area: areaValue, perimeter: perimeterValue});
+    setMeasurements({
+      area: areaValue * conversionFactors[selectedUnit],
+      perimeter: perimeterValue,
+    });
   };
 
   const calculateArea = coords => {
@@ -146,6 +161,7 @@ function MeasureAreaOnMap({navigation}) {
           region={mapRegion}
           showsUserLocation={true}
           followsUserLocation={true}
+          mapType={mapType}
           onPress={handleMapPress}>
           <Marker coordinate={mapRegion} title="Your Location" />
           {polygonCoords.length > 1 && (
@@ -180,11 +196,34 @@ function MeasureAreaOnMap({navigation}) {
 
       <View style={styles.measurementsContainer}>
         <Text style={styles.measurementsText}>
-          Area: {measurements.area.toFixed(2)} sq mtr
+          Area: {measurements.area.toFixed(2)} {selectedUnit}
         </Text>
         <Text style={styles.measurementsText}>
           Perimeter: {measurements.perimeter.toFixed(2)} mm
         </Text>
+      </View>
+
+      <View style={styles.dropdownContainer}>
+        <Picker
+          selectedValue={mapType}
+          style={styles.picker}
+          onValueChange={itemValue => setMapType(itemValue)}>
+          <Picker.Item label="Normal" value="standard" />
+          <Picker.Item label="Satellite" value="satellite" />
+          <Picker.Item label="Hybrid" value="hybrid" />
+        </Picker>
+
+        <Picker
+          selectedValue={selectedUnit}
+          style={styles.picker}
+          onValueChange={itemValue => setSelectedUnit(itemValue)}>
+          <Picker.Item label="Square m" value="Square m" />
+          <Picker.Item label="Square mm" value="Square mm" />
+          <Picker.Item label="Square cm" value="Square cm" />
+          <Picker.Item label="Square km" value="Square km" />
+          <Picker.Item label="Square miles" value="Square miles" />
+          <Picker.Item label="Square yards" value="Square yards" />
+        </Picker>
       </View>
     </View>
   );
@@ -239,6 +278,25 @@ const styles = StyleSheet.create({
     color: 'black',
     fontWeight: 'bold',
     textAlign: 'center',
+  },
+  dropdownContainer: {
+    position: 'absolute',
+    top: 10,
+    width: '90%',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.1)',
+    elevation: 2,
+    display: 'flex',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignSelf: 'center',
+  },
+  picker: {
+    width: '100%',
+    color: 'black',
+    flex: 1,
   },
 });
 

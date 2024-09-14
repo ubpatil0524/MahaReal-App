@@ -1,6 +1,14 @@
 import React, {useState, useEffect} from 'react';
-import {StyleSheet, Text, TouchableOpacity, View, Alert} from 'react-native';
-import {Picker} from '@react-native-picker/picker';
+import {
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  Modal,
+  FlatList,
+  Alert,
+} from 'react-native';
+import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 import MapView, {
   Marker,
   PROVIDER_GOOGLE,
@@ -17,6 +25,10 @@ function MeasureAreaOnMap({navigation}) {
   const [measurements, setMeasurements] = useState({area: 0, perimeter: 0});
   const [mapType, setMapType] = useState('standard');
   const [selectedUnit, setSelectedUnit] = useState('Square m');
+  const [measurementMode, setMeasurementMode] = useState('Manual Measurement');
+
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalType, setModalType] = useState(''); // To handle which modal is open
 
   const conversionFactors = {
     'Square m': 1,
@@ -56,6 +68,9 @@ function MeasureAreaOnMap({navigation}) {
           longitude: longitude,
         }));
         setErrorMessage(null);
+        if (measurementMode === 'GPS Measurement') {
+          addGPSCoordinate({latitude, longitude});
+        }
       },
       error => {
         setErrorMessage(error.message);
@@ -69,7 +84,7 @@ function MeasureAreaOnMap({navigation}) {
         Geolocation.clearWatch(watchId);
       }
     };
-  }, []);
+  }, [measurementMode]);
 
   const retryGeolocation = () => {
     Geolocation.getCurrentPosition(
@@ -78,8 +93,8 @@ function MeasureAreaOnMap({navigation}) {
         setMapRegion({
           latitude: latitude,
           longitude: longitude,
-          latitudeDelta: 0.0,
-          longitudeDelta: 0.0,
+          latitudeDelta: 0.015,
+          longitudeDelta: 0.0121,
         });
         setErrorMessage(null);
       },
@@ -92,19 +107,27 @@ function MeasureAreaOnMap({navigation}) {
   };
 
   const handleMapPress = e => {
-    const newCoords = [...polygonCoords, e.nativeEvent.coordinate];
-    if (
-      newCoords.length > 2 &&
-      newCoords[0].latitude === e.nativeEvent.coordinate.latitude &&
-      newCoords[0].longitude === e.nativeEvent.coordinate.longitude
-    ) {
-      newCoords.push(newCoords[0]);
-      setPolygonCoords(newCoords);
-      calculateAndUpdateMeasurements(newCoords);
-    } else {
-      setPolygonCoords(newCoords);
-      calculateAndUpdateMeasurements(newCoords);
+    if (measurementMode === 'Manual Measurement') {
+      const newCoords = [...polygonCoords, e.nativeEvent.coordinate];
+      if (
+        newCoords.length > 2 &&
+        newCoords[0].latitude === e.nativeEvent.coordinate.latitude &&
+        newCoords[0].longitude === e.nativeEvent.coordinate.longitude
+      ) {
+        newCoords.push(newCoords[0]);
+        setPolygonCoords(newCoords);
+        calculateAndUpdateMeasurements(newCoords);
+      } else {
+        setPolygonCoords(newCoords);
+        calculateAndUpdateMeasurements(newCoords);
+      }
     }
+  };
+
+  const addGPSCoordinate = coordinate => {
+    const newCoords = [...polygonCoords, coordinate];
+    setPolygonCoords(newCoords);
+    calculateAndUpdateMeasurements(newCoords);
   };
 
   const calculateAndUpdateMeasurements = coords => {
@@ -152,6 +175,71 @@ function MeasureAreaOnMap({navigation}) {
     );
   };
 
+  const handleIconPress = type => {
+    setModalType(type);
+    setModalVisible(true);
+  };
+
+  const renderModalContent = () => {
+    if (modalType === 'mapType') {
+      const options = [
+        {label: 'Normal', value: 'standard'},
+        {label: 'Satellite', value: 'satellite'},
+        {label: 'Hybrid', value: 'hybrid'},
+      ];
+
+      return options.map(option => (
+        <TouchableOpacity
+          key={option.value}
+          style={styles.modalOption}
+          onPress={() => {
+            setMapType(option.value);
+            setModalVisible(false);
+          }}>
+          <Text style={styles.modalOptionText}>{option.label}</Text>
+        </TouchableOpacity>
+      ));
+    } else if (modalType === 'unit') {
+      const units = [
+        'Square m',
+        'Square mm',
+        'Square cm',
+        'Square km',
+        'Square miles',
+        'Square yards',
+      ];
+
+      return units.map(unit => (
+        <TouchableOpacity
+          key={unit}
+          style={styles.modalOption}
+          onPress={() => {
+            setSelectedUnit(unit);
+            setModalVisible(false);
+          }}>
+          <Text style={styles.modalOptionText}>{unit}</Text>
+        </TouchableOpacity>
+      ));
+    } else if (modalType === 'measurementMode') {
+      const options = [
+        {label: 'Manual Measurement', value: 'Manual Measurement'},
+        {label: 'GPS Measurement', value: 'GPS Measurement'},
+      ];
+
+      return options.map(option => (
+        <TouchableOpacity
+          key={option.value}
+          style={styles.modalOption}
+          onPress={() => {
+            setMeasurementMode(option.value);
+            setModalVisible(false);
+          }}>
+          <Text style={styles.modalOptionText}>{option.label}</Text>
+        </TouchableOpacity>
+      ));
+    }
+  };
+
   return (
     <View style={styles.container}>
       {mapRegion ? (
@@ -188,42 +276,62 @@ function MeasureAreaOnMap({navigation}) {
         </View>
       )}
 
-      {errorMessage && (
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>Error: {errorMessage}</Text>
+      {/* Modals for Map Type, Unit, Measurement Mode */}
+      <Modal visible={modalVisible} animationType="slide" transparent={true}>
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            {renderModalContent()}
+            <TouchableOpacity
+              style={styles.modalClose}
+              onPress={() => setModalVisible(false)}>
+              <Text style={styles.modalCloseText}>Close</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      )}
+      </Modal>
 
-      <View style={styles.measurementsContainer}>
-        <Text style={styles.measurementsText}>
-          Area: {measurements.area.toFixed(2)} {selectedUnit}
-        </Text>
-        <Text style={styles.measurementsText}>
-          Perimeter: {measurements.perimeter.toFixed(2)} mm
-        </Text>
-      </View>
-
+      {/* Icon Buttons */}
       <View style={styles.dropdownContainer}>
-        <Picker
-          selectedValue={mapType}
-          style={styles.picker}
-          onValueChange={itemValue => setMapType(itemValue)}>
-          <Picker.Item label="Normal" value="standard" />
-          <Picker.Item label="Satellite" value="satellite" />
-          <Picker.Item label="Hybrid" value="hybrid" />
-        </Picker>
+        <View style={styles.pickerRow}>
+          {/* Map Type Icon */}
+          <TouchableOpacity
+            style={styles.iconWrapper}
+            onPress={() => handleIconPress('mapType')}>
+            <FontAwesome5 name="map" size={30} color="#000" />
+            <Text style={styles.iconText}>
+              {mapType.charAt(0).toUpperCase() + mapType.slice(1)}
+            </Text>
+          </TouchableOpacity>
 
-        <Picker
-          selectedValue={selectedUnit}
-          style={styles.picker}
-          onValueChange={itemValue => setSelectedUnit(itemValue)}>
-          <Picker.Item label="Square m" value="Square m" />
-          <Picker.Item label="Square mm" value="Square mm" />
-          <Picker.Item label="Square cm" value="Square cm" />
-          <Picker.Item label="Square km" value="Square km" />
-          <Picker.Item label="Square miles" value="Square miles" />
-          <Picker.Item label="Square yards" value="Square yards" />
-        </Picker>
+          {/* Measurement Unit Icon */}
+          <TouchableOpacity
+            style={styles.iconWrapper}
+            onPress={() => handleIconPress('unit')}>
+            <FontAwesome5 name="ruler-combined" size={30} color="#000" />
+            <Text style={styles.iconText}>{selectedUnit}</Text>
+          </TouchableOpacity>
+
+          {/* Measurement Mode Icon */}
+          <TouchableOpacity
+            style={styles.iconWrapper}
+            onPress={() => handleIconPress('measurementMode')}>
+            <FontAwesome5 name="crosshairs" size={30} color="#000" />
+            <Text style={styles.iconText}>
+              {measurementMode === 'Manual Measurement' ? 'Manual' : 'GPS'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Area and Perimeter */}
+        <View style={styles.measurementsContainer}>
+          <Text style={styles.measurementsText}>
+            Area: {measurements.area.toFixed(2)} {selectedUnit}
+          </Text>
+          <View style={{width: 1, height: 25, backgroundColor: 'black'}} />
+          <Text style={styles.measurementsText}>
+            Perimeter: {measurements.perimeter.toFixed(2)} mm
+          </Text>
+        </View>
       </View>
     </View>
   );
@@ -237,66 +345,87 @@ const styles = StyleSheet.create({
     height: '100%',
     width: '100%',
   },
+  dropdownContainer: {
+    position: 'absolute',
+    top: 0,
+    width: '100%',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    zIndex: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+  },
+  pickerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between', // Space the icons evenly
+  },
+  iconWrapper: {
+    alignItems: 'center',
+    flex: 1, // Take equal space for each icon
+    marginHorizontal: 5,
+  },
+  iconText: {
+    fontSize: 12,
+    marginTop: 5, // Add some space between icon and text
+  },
+  measurementsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  measurementsText: {
+    fontSize: 16,
+  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
   loadingText: {
-    color: 'black',
-    fontWeight: 'bold',
     fontSize: 18,
   },
   errorContainer: {
-    position: 'absolute',
-    top: 10,
-    left: 10,
-    right: 10,
-    backgroundColor: 'rgba(255, 0, 0, 0.8)',
     padding: 10,
+    backgroundColor: 'red',
     borderRadius: 5,
   },
   errorText: {
     color: 'white',
-    fontWeight: 'bold',
     textAlign: 'center',
   },
-  measurementsContainer: {
-    position: 'absolute',
-    bottom: 20,
-    width: '95%',
-    alignSelf: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    padding: 10,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.1)',
-    elevation: 2,
-  },
-  measurementsText: {
-    fontSize: 16,
-    color: 'black',
-    fontWeight: 'bold',
-    textAlign: 'center',
-  },
-  dropdownContainer: {
-    position: 'absolute',
-    top: 10,
-    width: '90%',
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.1)',
-    elevation: 2,
-    display: 'flex',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignSelf: 'center',
-  },
-  picker: {
-    width: '100%',
-    color: 'black',
+  modalContainer: {
     flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+  },
+  modalContent: {
+    width: '50%',
+    backgroundColor: 'white',
+    padding: 10,
+    borderRadius: 10,
+    alignSelf: 'center',
+  },
+  modalOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 5,
+  },
+  modalOptionText: {
+    fontSize: 18,
+  },
+  modalClose: {
+    marginTop: 20,
+    backgroundColor: 'green',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 5,
+  },
+  modalCloseText: {
+    fontSize: 20,
+    color: 'white',
+    textAlign: 'center',
   },
 });
 

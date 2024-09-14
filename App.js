@@ -21,7 +21,11 @@ const App = () => {
         <Stack.Screen name="MahaReal" component={HomeScreen} />
         <Stack.Screen name="Search" component={SearchReport} />
         <Stack.Screen name="UnitConverter" component={UnitConverter} />
-        <Stack.Screen name="MeasureAreaOnMap" component={MeasureAreaOnMap} />
+        <Stack.Screen
+          name="MeasureAreaOnMap"
+          component={MeasureAreaOnMap}
+          options={{headerShown: false}}
+        />
       </Stack.Navigator>
     </NavigationContainer>
   );
